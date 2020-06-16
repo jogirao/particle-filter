@@ -24,3 +24,9 @@ class Region:
                     if priority_point not in h:
                         hq.heappush(h, priority_point)
         return h
+
+    def plot_region(self, plot, facecolor='azure', edgecolor='lightblue'):
+        edges = self.corners
+        edges.append(edges[0])
+        xs, ys = zip(*edges)
+        plot.fill(xs, ys, facecolor=facecolor, edgecolor=edgecolor, linewidth=3)
