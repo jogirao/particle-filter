@@ -1,6 +1,6 @@
 import random as rd
 import matplotlib.pyplot as plt
-import Map
+from map import Map
 
 class ParticleFilter:
 
@@ -52,10 +52,10 @@ class ParticleFilter:
 
     def plot_environment(self):
         # Plots map
-        plt.figure()
-        self.map.plot_map()
+        plt.figure(figsize=(20, 20))
+        self.map.plot_map(plt)
         for agent in self.agents:
-            plt.pyplot(agent.coordinates[0], agent.coordinates[1], '.k')
+            plt.plot(agent.coordinates[0], agent.coordinates[1], marker="o", color='k')
         plt.show()
 
 #    def get_agents(self, nb_agents):
