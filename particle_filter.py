@@ -1,21 +1,20 @@
 import random as rd
 import matplotlib.pyplot as plt
-
+import Map
 
 class ParticleFilter:
 
-    def __init__(self, nb_agents, map_nb=0):
+    def __init__(self, nb_agents=5, map_nb=0):
         # Initialize environment
         self.map = self.get_map(map_nb)
 #        self.agents = self.get_agents(nb_agents, self.map)
 
     def make_map(self):
         # Create random map
-        nb_points = 4
-        points = []
-        for p in range(nb_points):
-            points.append((rd.uniform(0, 1), rd.uniform(0, 1)))
-        return points
+        """
+        In progress
+        """
+        return []
 
     def default_map(self, map_nb):
         # Get map from set of default maps
@@ -37,27 +36,26 @@ class ParticleFilter:
             print("Map number not available.")
             return []
 
-    def points2series(self, Map):
-        # Transforms coordinates to point series
-        series_set = []
-        for area in Map:
-            series = [[], []]
-            for point in area:
-                series[0].append(point[0])
-                series[1].append(point[1])
-            series_set.append(series)
-
     def get_map(self, map_nb):
         # Initialize map
         if map_nb > 0:
-            return self.points2series(self.default_map(map_nb))
+            areas=self.default_map(map_nb)
         else:
-            return self.make_map()
+            areas=self.make_map()
+        if areas:
+            if len(areas)>1:
+                return Map(areas[0], areas[1:])
+            else:
+                return Map(areas[0])
+        else:
+            return Map()
 
-    def plot_map(self, map):
+    def plot_environment(self):
         # Plots map
-        for area in map:
-            plt.pyplot(area[0], area[1], 'k')
+        plt.figure()
+        self.map.plot_map()
+        for agent in self.agents:
+            plt.pyplot(agent.coordinates[0], agent.coordinates[1], '.k')
         plt.show()
 
 #    def get_agents(self, nb_agents):
