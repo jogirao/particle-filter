@@ -2,9 +2,7 @@ import heapq as hq
 
 
 class Region:
-    def __init__(self, points=None):
-        if points is None:
-            points = [(0, 0), (0, 1), (1, 1), (1, 0)]
+    def __init__(self, points):
         self.corners = points
 
     def intersect(self, x_i, y_i, x_f, y_f):
