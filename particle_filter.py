@@ -1,13 +1,17 @@
-import random as rd
 import matplotlib.pyplot as plt
+import math
+import numpy as np
+import random as rd
 from map import Map
+from agent import Agent
+
 
 class ParticleFilter:
 
-    def __init__(self, nb_agents=5, map_nb=0):
+    def __init__(self, nb_agents=5, nb_observations=3, map_nb=0, var=!/400):
         # Initialize environment
         self.map = self.get_map(map_nb)
-#        self.agents = self.get_agents(nb_agents, self.map)
+        self.get_agents(nb_agents, nb_observations)
 
     def make_map(self):
         # Create random map
@@ -51,12 +55,69 @@ class ParticleFilter:
             return Map()
 
     def plot_environment(self):
-        # Plots map
+        # Plots world state
         plt.figure(figsize=(20, 20))
         self.map.plot_map(plt)
         for agent in self.agents:
             plt.plot(agent.coordinates[0], agent.coordinates[1], marker="o", color='k')
         plt.show()
 
-#    def get_agents(self, nb_agents):
-#        return
+    def get_agents(self, nb_agents, nb_observations):
+        # Initial agent configuration
+        self.agents=[]
+        for i in range(nb_agents):
+            # Attribute initialization
+            coords=(rd.uniform(0,1),rd.uniform(0,1))
+            while  not self.map.contains(*coords):
+                coords=(rd.uniform(0,1),rd.uniform(0,1))
+            orientation=rd.uniform(-math.pi, math.pi)
+            # Create agent
+            self.agents.append(Agent(coords, orientation))
+            
+    def create_next_iteration_agents(self, observation):
+        # Computes the position of the agents in the next iteration
+        base_agents=self.select_agents(self.fit_agent_universe(observation))
+        self.new_agents(base_agents)
+        
+    def select_agents(self, fit_list):
+        # Select list of agents that are going to be used as a base for the next iteration
+        s=0
+        normalized_summed_list=np.array([])
+        for i in fit_list:
+            s+=i
+            normalized_summed_list.append(s)
+        normalized_summed_list/=normalized_summed_list[-1]
+        return self.roulette(len(normalized_summed_list), normalized_summed_list)
+    
+    def roulette(nb_plays, probability_list):
+        # Computes the final position based on the probability list
+        result=[]
+        for i in range(nb_plays):
+            num=rd.uniform(0,1)
+            index=0
+            while num>probability_list[index]:
+                index+=1
+            result.append(index)
+        return result
+    
+    def new_agents(self, agent_selection):
+        # Generates a new set of agents from the selected ones
+        index=0
+        for i in agent_selection:
+            base=self.agents[i].coordinates
+            new_pos=(rd.gauss(base[0], sigma), rd.gauss(base[1], sigma)
+            while not self.map.contains(new_pos):
+                new_pos=(rd.gauss(base[0], sigma), rd.gauss(base[1], sigma)
+            self.agents[index]=new_pos
+            index+=1
+        
+    def fit_agent_universe(self, observation):
+        # Returns the fit of each agent according to the entity's observation.
+        fit=[]
+        for agent in self.agent:
+            fit.append(1/((self.mse(agent.get_observations, observation)**2)+1))
+        return fit
+    
+    def mse(goal, data):
+        # Mean squared error of the data
+        return ((goal-data)**2)/len(goal)

@@ -2,8 +2,8 @@ import math
 
 
 class Agent:
-    def __init__(self, x, y, orientation=0, n_observations=3):
-        self.coordinates = (x, y)
+    def __init__(self, coordinates, orientation=0, n_observations=3):
+        self.coordinates = coordinates
         self.orientation = orientation
         self.n_observations = n_observations
 
