@@ -24,7 +24,7 @@ class Map:
         return final_pos[1]
 
     def contains(self, x, y):
-        pass
+        return False
 
     def edge_intersect_by_pose(self, x, y, angle):
         quarter_pi = math.pi / 4

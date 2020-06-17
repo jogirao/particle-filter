@@ -26,3 +26,4 @@ class Agent:
         x = distance * math.cos(angle + self.orientation) + self.coordinates[0]
         y = distance * math.sin(angle + self.orientation) + self.coordinates[1]
         self.coordinates = agent_map.get_destination(*self.coordinates, x, y)
+        self.orientation = process_radians(self.orientation+angle)
