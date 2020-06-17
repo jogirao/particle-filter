@@ -41,7 +41,7 @@ def test_intersect_vortex():
     # Then we get no duplicates and we get one intersection
     assert len(collisions) == 1
     assert collisions[0][1] == vortex_to_intersect
-    
+
 #
 #     def plot_region(self, plot, facecolor='azure', edgecolor='lightblue'):
 #         edges = self.corners
