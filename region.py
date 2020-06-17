@@ -19,8 +19,8 @@ class Region:
                         y_i - self.corners[i - 1][1])) / denominator
                 if not (t > 1 or t < 0 or u > 1 or u < 0):
                     # Lines intersect at point P
-                    P = (x_i + t * (x_f - x_i), y_i + t * (y_f - y_i))
-                    priority_point = (abs(P[0] - x_i) + abs(P[1] - y_i), P)
+                    P = round(x_i + t * (x_f - x_i), 8), round(y_i + t * (y_f - y_i), 8)
+                    priority_point = (round(abs(P[0] - x_i) + abs(P[1] - y_i), 8), P)
                     if priority_point not in h:
                         hq.heappush(h, priority_point)
         return h

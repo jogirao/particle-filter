@@ -8,7 +8,8 @@ class Map:
 
     def __init__(self, boundaries=None, obstacles=None):
         if boundaries is None:
-            boundaries = [(0, 0), (0, 1), (1, 1), (1, 0)]
+            boundaries = [(self.x_min, self.y_min), (self.x_min, self.y_max),
+                          (self.x_max, self.y_max), (self.x_max, self.y_min)]
         if obstacles is None:
             obstacles = []
         self.map_region = Region(boundaries)
@@ -24,7 +25,8 @@ class Map:
         return final_pos[1]
 
     def contains(self, x, y):
-        pass
+        n_intersections = sum(len(region.intersect(x, y, self.x_min, y)) for region in self.obstacles + [self.map_region])
+        return n_intersections % 2
 
     def edge_intersect_by_pose(self, x, y, angle):
         quarter_pi = math.pi / 4
