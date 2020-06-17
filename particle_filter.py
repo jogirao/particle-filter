@@ -8,11 +8,11 @@ from agent import Agent
 
 class ParticleFilter:
 
-    def __init__(self, nb_agents=5, nb_observations=3, map_nb=0, var=!/400):
+    def __init__(self, nb_agents=5, nb_observations=3, map_nb=0):
         # Initialize environment
         self.map = self.get_map(map_nb)
         self.get_agents(nb_agents, nb_observations)
-
+        
     def make_map(self):
         # Create random map
         """
@@ -68,7 +68,7 @@ class ParticleFilter:
         for i in range(nb_agents):
             # Attribute initialization
             coords=(rd.uniform(0,1),rd.uniform(0,1))
-            while  not self.map.contains(*coords):
+            while not self.map.contains(*coords):
                 coords=(rd.uniform(0,1),rd.uniform(0,1))
             orientation=rd.uniform(-math.pi, math.pi)
             # Create agent
@@ -100,14 +100,14 @@ class ParticleFilter:
             result.append(index)
         return result
     
-    def new_agents(self, agent_selection):
+    def new_agents(self, agent_selection, sigma=1/20):
         # Generates a new set of agents from the selected ones
         index=0
         for i in agent_selection:
             base=self.agents[i].coordinates
-            new_pos=(rd.gauss(base[0], sigma), rd.gauss(base[1], sigma)
-            while not self.map.contains(new_pos):
-                new_pos=(rd.gauss(base[0], sigma), rd.gauss(base[1], sigma)
+            new_pos=(rd.gauss(base[0], sigma), rd.gauss(base[1], sigma))
+            while not self.map.contains(*new_pos):
+                new_pos=(rd.gauss(base[0], sigma), rd.gauss(base[1], sigma))
             self.agents[index]=new_pos
             index+=1
         
@@ -121,3 +121,9 @@ class ParticleFilter:
     def mse(goal, data):
         # Mean squared error of the data
         return ((goal-data)**2)/len(goal)
+    
+    def move_agents(self, movement, error=(0, 0)):
+        # Moves agents according to input movement
+        for agent in self.agents:
+            agent.move_agent(self.map, movement[0]+error[0], movement[1]+error[1])
+            
