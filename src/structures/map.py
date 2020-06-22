@@ -1,4 +1,4 @@
-from region import Region
+from src.structures.region import Region
 import math
 import heapq as hq
 

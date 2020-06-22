@@ -1,0 +1,11 @@
+visualizer_state: True
+particle_filter:
+  map:
+    generate_map: False
+    map_path: "maps/default_map.txt"
+  entity:
+    generate_movements: False
+    entity_pose_path: "entities/entity_pose.txt"
+    entity_move_path: "entities/entity_moves.txt"
+  n_observations: 3
+  n_agents: 10
