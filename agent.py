@@ -9,6 +9,7 @@ class Agent:
         self.position = position
         self.orientation = orientation
         self.nb_observations = nb_observations
+        self.radius = 0.5
 
     def get_observations(self, agent_map):
         # Compute agent observations
@@ -28,5 +29,7 @@ class Agent:
         new_y = distance * sin(angle + self.orientation) + self.position[1]
         # Get new agent position considering possible collisions
         if Map.intersects(*self.position, new_x, new_y):
-            self.position = Map.get_collision(self.position, (new_x, new_y))  # TODO implement generation of new position after collision considering the radius of the agent
-        self.orientation = self.orientation + angle
+            new_x, new_y = Map.get_collision(self.position, (new_x, new_y))
+            self.position = (new_x - self.radius * cos(angle + self.orientation),
+                             new_y - self.radius * sin(angle + self.orientation))
+            self.orientation = self.orientation + angle
