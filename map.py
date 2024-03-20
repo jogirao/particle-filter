@@ -1,12 +1,12 @@
 from json import loads
 import matplotlib.pyplot as plt
-from math import floor, ceil
+from math import floor, ceil, inf, sqrt, pi, tan
 
 
 class Map:
 
     def __init__(self, map_choice="preset"):
-        self.wall_points_x, self.wall_points_y = [], []
+        self.walls, self.wall_vertices_x, self.wall_vertices_y = [], [], []
         self.map_min_x, self.map_max_x, self.map_min_y, self.map_max_y = 0, 0, 0, 0
         self.build_map(map_choice)
 
@@ -18,22 +18,69 @@ class Map:
             while not map_points:
                 string = file.readline()
                 if string[:string.find(":")] == map_choice:
-                    map_points = loads(string[string.find(":")+2:])
+                    self.walls = loads(string[string.find(":")+2:])
 
         # Generate point series in x,x axis from group of points
-        for wall in map_points:
+        for wall in self.walls:
             wall_x, wall_y = [], []
             for point in wall:
                 wall_x.append(point[0]), wall_y.append(point[1])
-            self.wall_points_x.append(wall_x), self.wall_points_y.append(wall_y)
+            self.wall_vertices_x.append(wall_x), self.wall_vertices_y.append(wall_y)
 
-        min_x, max_x = min(min(x) for x in self.wall_points_x), max(max(x) for x in self.wall_points_x)
-        min_y, max_y = min(min(y) for y in self.wall_points_y), max(max(y) for y in self.wall_points_y)
+        min_x, max_x = min(min(x) for x in self.wall_vertices_x), max(max(x) for x in self.wall_vertices_x)
+        min_y, max_y = min(min(y) for y in self.wall_vertices_y), max(max(y) for y in self.wall_vertices_y)
         self.map_min_x, self.map_max_x = min_x - floor(0.1*(max_x-min_x)), max_x + ceil(0.1 * (max_x - min_x))
         self.map_min_y, self.map_max_y = min_y - floor(0.1*(max_y-min_y)), max_y + ceil(0.1 * (max_y - min_y))
 
+    def get_collision(self, line1_pt1: tuple, line1_pt2: tuple) -> tuple:
+        # Get first collision between a line segment and the edges of a polygon
+        coll_dist, coll_pt = inf, (0, 0)
+        for wall in self.walls:
+            for n in range(len(wall)-1):
+                line2_pt1, line2_pt2 = wall[n], wall[n+1]
+                # Check if both lines intersect
+                if self.intersects(line1_pt1, line1_pt2, line2_pt1, line2_pt2):
+                    # Get intersection point
+                    new_coll_pt = self.get_collision_point(line1_pt1, line1_pt2, line2_pt1, line2_pt2)
+                    # Update if distance to collision is smaller than current one
+                    if (dist := sqrt((new_coll_pt[1]-line1_pt1[1])**2 + (new_coll_pt[0]-line1_pt1[0])**2)) < coll_dist:
+                        coll_dist = dist
+                        coll_pt = new_coll_pt
+        return coll_pt
 
-    def intersects(self, p1, q1, p2, q2) -> bool:
+    def get_collision_point(self, line1_pt1: tuple, line1_pt2: tuple, line2_pt1: tuple, line2_pt2: tuple) -> tuple:
+        # Compute collision point
+        m1, b1 = self.get_line_params(*line1_pt1, *line1_pt2)
+        m2, b2 = self.get_line_params(*line2_pt1, *line2_pt2)
+        x = (b2 - b1) / (m1 - m2)
+        y = m1 * x + b1
+        return x, y
+
+    @staticmethod
+    def get_line_params(x1: int, y1: int, x2: int, y2: int) -> tuple:
+        # Compute line parameters
+        m = (y2 - y1) / (x2 - x1)  # Slope
+        b = y1 - m * x1  # Y-intercept
+        return m, b
+
+    def get_observation(self, position: tuple, angle: float) -> tuple:
+        # Compute observation (collision distance to nearest wall
+        # Compute line parameters from point and angle
+        m = tan(angle)  # Slope
+        b = position[1] - m * position[0]  # Y-intercept
+        # Compute end point coordinates
+        if -(3 * pi)/4 <= angle < -pi/4:
+            end_pt = ((self.map_min_y - b) / m, self.map_min_y)
+        elif -pi/4 <= angle < pi/4:
+            end_pt = (self.map_max_x, m * self.map_max_x + b)
+        elif pi/4 <= angle < (3 * pi)/4:
+            end_pt = ((self.map_max_y - b) / m, self.map_max_y)
+        else:
+            end_pt = (self.map_min_x, m * self.map_min_x + b)
+        # Compute collision point with nearest wall
+        return self.get_collision(position, end_pt)
+
+    def intersects(self, p1: tuple, q1: tuple, p2: tuple, q2: tuple) -> bool:
         # Checks if 2 line segments ((p1,q1) and (p2,q2)) intersect
         o1, o2, o3, o4 = self.orientation(p1, q1, p2), self.orientation(p1, q1, q2), self.orientation(p2, q2, p1), \
                          self.orientation(p2, q2, q1)
@@ -49,12 +96,12 @@ class Map:
     def is_in_field(self, point: list) -> bool:
         # Counts vertical/horizontal intersections with the walls
         horiz_hits, vert_hits = 0, 0
-        for nb in range(len(self.wall_points_x)):
+        for nb in range(len(self.wall_vertices_x)):
             # For each polygon
-            for edge in range(len(self.wall_points_x[nb])-1):
+            for edge in range(len(self.wall_vertices_x[nb])-1):
                 # For each wall, check if horizontal/vertical lines intersect
-                x1, x2, y1, y2 = self.wall_points_x[edge], self.wall_points_x[edge+1], self.wall_points_y[edge], \
-                                 self.wall_points_y[edge+1]
+                x1, x2, y1, y2 = self.wall_vertices_x[edge], self.wall_vertices_x[edge+1], self.wall_vertices_y[edge], \
+                                 self.wall_vertices_y[edge+1]
                 if x1 < point[0] < x2:
                     vert_hits += 1
                 if y1 < point[1] < y2:
@@ -78,6 +125,6 @@ class Map:
 
     def plot(self, ax):
         # Plot map
-        for nb in range(len(self.wall_points_x)):
-            ax.plot(self.wall_points_x[nb], self.wall_points_y[nb], linewidth=2.0, color='k')
+        for nb in range(len(self.wall_vertices_x)):
+            ax.plot(self.wall_vertices_x[nb], self.wall_vertices_y[nb], linewidth=2.0, color='k')
             ax.set(xlim=(self.map_min_x, self.map_max_x), ylim=(self.map_min_y, self.map_max_y))
