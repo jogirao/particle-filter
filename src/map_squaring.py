@@ -1,5 +1,4 @@
-import matplotlib.pyplot as plt
-from map import Map
+from src.structures.map import Map
 
 class Square():
     
@@ -11,7 +10,7 @@ class Square():
     
     def split(self, grid):
         # Get map
-        world_map=grid.map
+        world_map=grid.background
         
         # Split self in 4 equal squares
         w=self.width/2

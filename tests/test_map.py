@@ -1,4 +1,4 @@
-from map import Map
+from src.structures.map import Map
 from itertools import product
 
 

@@ -1,4 +1,4 @@
-from region import Region
+from src.structures.region import Region
 
 
 def test_init_region():
