@@ -1,6 +1,4 @@
-import numpy as np
 from math import pi, cos, sin
-from utils import process_radians
 from matplotlib.patches import FancyArrow
 
 

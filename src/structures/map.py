@@ -1,5 +1,4 @@
 from json import loads
-import matplotlib.pyplot as plt
 from math import floor, ceil, inf, sqrt, pi, tan
 
 
@@ -71,7 +70,7 @@ class Map:
             m1, b1 = self.get_line_params(*line1_pt1, *line1_pt2)
             m2, b2 = self.get_line_params(*line2_pt1, *line2_pt2)
             if m1 == m2:
-                # Colinear lines, get mean point
+                # Collinear lines, get mean point
                 x = (line1_pt1[0] + line1_pt2[0] + line2_pt1[0] + line2_pt2[0]) / 4
                 y = (line1_pt1[1] + line1_pt2[1] + line2_pt1[1] + line2_pt2[1]) / 4
             else:
