@@ -1,148 +1,91 @@
-import matplotlib.pyplot as plt
 import math
-import numpy as np
 import random as rd
-from src.structures.map import Map
 from src.structures.agent import Agent
 from src.utils.process_input import load_map, load_entity
+from math import pi
 
 
 class ParticleFilter:
 
-    def __init__(self, background, entity, movements=None, n_agents=10, n_observations=3):
-        entity.n_observations = n_observations
+    def __init__(self, background, agent, movements=None, nb_estimates=10, nb_observations=3):
+        self.background = background
+        self.agent = agent
         self.movements = movements
-        self.background, self.entity = background, entity
-        self.get_agents(n_agents, n_observations)
+        self.estimates = []
+        self.generate_initial_estimates(nb_estimates, nb_observations)
 
+    # TODO review & refactor config files and methods
     @classmethod
     def init_from_config(cls, config):
         background = load_map(config['map'])
-        entity, movements = load_entity(config['entity'])
-        cls(background, entity, movements, config['n_agents'], config['n_observations'])
+        agent, movements = load_entity(config['agent'])
+        cls(background, agent, movements, config['nb_estimates'], config['nb_observations'])
 
-
-
-
-
-
-
-
-
-    # TODO All under here
-    def make_map(self):
-        # Create random map
-        """
-        In progress
-        """
-        return []
-
-    def default_map(self, map_nb):
-        # Get map from set of default maps
-        maps = {1: [[(0, 0), (0, 1), (1, 1), (1, 0)]],
-                2: [[(0, 0), (0, 0.3), (0.2, 0.3), (0.2, 0.7), (0, 0.7), (0, 1), (0.3, 1), (0.3, 0.8), (0.7, 0.8),
-                     (0.7, 1),
-                     (1, 1), (1, 0.7), (0.8, 0.7), (0.8, 0.3), (1, 0.3), (1, 0), (0.7, 0), (0.7, 0.2), (0.3, 0.2),
-                     (0.3, 0)]],
-                3: [[(0, 0), (0, 0.3), (0.2, 0.3), (0.2, 0.7), (0, 0.7), (0, 1), (0.3, 1), (0.3, 0.8), (0.7, 0.8),
-                     (0.7, 1), (1, 1), (1, 0.7), (0.8, 0.7), (0.8, 0.3), (1, 0.3), (1, 0), (0.7, 0), (0.7, 0.2),
-                     (0.3, 0.2), (0.3, 0)], [(0.5, 0.3), (0.5, 0.6), (0.6, 0.4), (0.59, 0.29)]],
-                4: [[(0.2, 0.2), (0.1, 0.7), (0.5, 0.9), (0.8, 0.6), (0.7, 0.3)]],
-                5: [[(0.2, 0.2), (0.1, 0.7), (0.5, 0.9), (0.8, 0.6), (0.7, 0.3)],
-                    [(0.3, 0.42), (0.3, 0.58), (0.42, 0.6), (0.5, 0.6), (0.42, 0.4)]],
-                6: [[(0.2, 0.2), (0.1, 0.7), (0.5, 0.9), (0.8, 0.6), (0.7, 0.3)],
-                    [(0.3, 0.35), (0.5, 0.35), (0.5, 0.45), (0.3, 0.45)], [(0.3, 0.7), (0.4, 0.78), (0.42, 0.65)],
-                    [(0.5, 0.7), (0.7, 0.6), (0.7, 0.45), (0.6, 0.46), (0.65, 0.57)]]}
-        try:
-            return maps[map_nb]
-        except:
-            print("Map number not available.")
-            return []
-
-    def get_map(self, map_nb):
-        # Initialize map
-        if map_nb > 0:
-            areas = self.default_map(map_nb)
-        else:
-            areas = self.make_map()
-        if areas:
-            if len(areas) > 1:
-                return Map(areas[0], areas[1:])
-            else:
-                return Map(areas[0])
-        else:
-            return Map()
-
-    def plot_environment(self):
-        # Plots world state
-        plt.figure(figsize=(20, 20))
-        self.background.plot_map(plt)
-        for agent in self.agents:
-            plt.plot(agent.coordinates[0], agent.coordinates[1], marker="o", color='k')
-
-        plt.show()
-
-    def get_agents(self, nb_agents, nb_observations):
+    def generate_initial_estimates(self, nb_estimates: int, nb_observations: int) -> None:
         # Initial agent configuration
-        self.agents = []
-        for i in range(nb_agents):
-            # Attribute initialization
-            coords = (rd.uniform(0, 1), rd.uniform(0, 1))
-            while not self.background.contains(*coords):
-                coords = (rd.uniform(0, 1), rd.uniform(0, 1))
+        min_x, max_x = self.background.map_min_x, self.background.map_max_x
+        min_y, max_y = self.background.map_min_y, self.background.map_max_y
+        while len(self.estimates) < nb_estimates:
+            # Generate agent pose
+            position = (rd.uniform(min_x, max_x), rd.uniform(min_y, max_y))
+            while not self.background.is_in_field(position, self.agent.radius):
+                position = (rd.uniform(min_x, max_x), rd.uniform(min_y, max_y))
             orientation = rd.uniform(-math.pi, math.pi)
-            # Create agent
-            self.agents.append(Agent(coords, orientation))
+            self.estimates.append(Agent(position, orientation, nb_observations, 'b'))
 
-    def create_next_iteration_agents(self, observation):
-        # Computes the position of the agents in the next iteration
-        base_agents = self.select_agents(self.fit_agent_universe(observation))
-        self.new_agents(base_agents)
+    def generate_new_estimates(self) -> None:
+        # Generate new estimates
+        roulette = self.generate_roulette()
+        # Computes the position of the next iteration of agents
+        new_estimates = []
+        for i in range(len(self.estimates)):
+            estimate_nb = self.spin_roulette(roulette)
+            new_estimates.append(self.create_new_agent(estimate_nb))
+        self.estimates = new_estimates
 
-    def select_agents(self, fit_list):
-        # Select list of agents that are going to be used as a base for the next iteration
-        s = 0
-        normalized_summed_list = np.array([])
-        for i in fit_list:
-            s += i
-            normalized_summed_list.append(s)
-        normalized_summed_list /= normalized_summed_list[-1]
-        return self.roulette(len(normalized_summed_list), normalized_summed_list)
+    def generate_roulette(self) -> list:
+        # Generates a roulette-like probability function based on the likelihood of the estimates being the truth
+        roulette = []
+        truth = self.agent.get_observations(self.background, 'noisy')
+        for estimate in self.estimates:
+            observations = estimate.get_observations(self.background)
+            roulette.append(self.compute_fit(truth, observations))
+        # Normalize roulette
+        roulette_sum = sum(roulette)
+        slot_sum = 0
+        for slot_nb in range(len(roulette)):
+            slot_sum += (roulette[slot_nb] / roulette_sum)
+            roulette[slot_nb] = slot_sum
+        # Ensure that the probability function ends with value 1
+        roulette[-1] = 1
+        return roulette
 
-    def roulette(self, nb_plays, probability_list):
-        # Computes the final position based on the probability list
-        result = []
-        for i in range(nb_plays):
-            num = rd.uniform(0, 1)
-            index = 0
-            while num > probability_list[index]:
-                index += 1
-            result.append(index)
-        return result
+    @staticmethod
+    def compute_fit(truth: list, estimate: list) -> float:
+        # Computes the estimate's fit
+        error = 0
+        for i in range(len(truth)):
+            error += (truth[i] - estimate[i]) ** 2
+        return len(truth) / error
 
-    def new_agents(self, agent_selection, sigma=1 / 20):
+    @staticmethod
+    def spin_roulette(roulette: list) -> int:
+        # Generates an integer based on a roulette like probability list
+        slot, value = 0, rd.uniform(0, 1)
+        while value > roulette[slot]:
+            slot += 1
+        return slot
+
+    def create_new_agent(self, estimate_nb: int) -> Agent:
         # Generates a new set of agents from the selected ones
-        index = 0
-        for i in agent_selection:
-            base = self.agents[i].coordinates
-            new_pos = (rd.gauss(base[0], sigma), rd.gauss(base[1], sigma))
-            while not self.background.contains(*new_pos):
-                new_pos = (rd.gauss(base[0], sigma), rd.gauss(base[1], sigma))
-            self.agents[index] = new_pos
-            index += 1
-
-    def fit_agent_universe(self, observation):
-        # Returns the fit of each agent according to the entity's observation.
-        fit = []
-        for agent in self.agent:
-            fit.append(1 / ((self.mse(agent.get_observations, observation) ** 2) + 1))
-        return fit
-
-    def mse(self, goal, data):
-        # Mean squared error of the data
-        return ((goal - data) ** 2) / len(goal)
-
-    def move_agents(self, movement, error=(0, 0)):
-        # Moves agents according to input movement
-        for agent in self.agents:
-            agent.move_agent(self.background, movement[0] + error[0], movement[1] + error[1])
+        position = self.estimates[estimate_nb].position
+        orientation = self.estimates[estimate_nb].orientation
+        nb_observations = self.estimates[estimate_nb].nb_observations
+        radius = self.estimates[estimate_nb].radius
+        # Add uncertainty
+        new_position = (rd.gauss(position[0], radius), rd.gauss(position[1], radius))
+        while not self.background.is_in_field(new_position, radius):
+            new_position = (rd.gauss(position[0], radius), rd.gauss(position[1], radius))
+        new_orientation = (orientation + pi) % (2 * pi) - pi
+        new_agent = Agent(new_position, new_orientation, nb_observations, 'b')
+        return new_agent

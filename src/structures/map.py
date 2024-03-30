@@ -1,5 +1,6 @@
 from json import loads
 from math import floor, ceil, inf, sqrt, pi, tan
+from random import gauss
 
 
 class Map:
@@ -12,7 +13,7 @@ class Map:
     def build_map(self, map_choice):
         # Create map from collection of points stored in file
         # Get points from file
-        with open("MapPointDict.txt", "r") as file:
+        with open("map_dictionary.txt", "r") as file:
             while not self.walls:
                 string = file.readline()
                 if string[: string.find(":")] == map_choice:
@@ -99,7 +100,7 @@ class Map:
         b = y1 - m * x1  # Y-intercept
         return m, b
 
-    def get_observation(self, position: tuple, angle: float) -> tuple:
+    def get_observation(self, position: tuple, angle: float, obs_nature: str) -> tuple:
         # Compute observation (collision distance to nearest wall
         # Compute line parameters from point and angle
         m = tan(angle)  # Slope
@@ -114,7 +115,10 @@ class Map:
         else:
             end_pt = (self.map_min_x, m * self.map_min_x + b)
         # Compute collision point with nearest wall
-        return self.get_collision(position, end_pt)
+        collision = self.get_collision(position, end_pt)
+        if obs_nature == 'noisy':
+            observation = gauss(collision, 0.01 * collision)
+        return observation
 
     def intersects(self, p1: tuple, q1: tuple, p2: tuple, q2: tuple) -> bool:
         # Checks if 2 line segments ((p1,q1) and (p2,q2)) intersect

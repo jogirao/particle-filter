@@ -10,7 +10,7 @@ class Agent:
         self.radius = 4
         self.color = color
 
-    def get_observations(self, map):
+    def get_observations(self, map, obs_nature='clean'):
         # Compute agent observations
         angle_shift = pi / (2 * (self.nb_observations - 1))
         theta_0 = self.orientation - pi / 4
@@ -20,7 +20,7 @@ class Agent:
             obs_angle = (
                 (theta_0 + n * angle_shift + pi) % (2 * pi)
             ) - pi  # Normalized angle
-            observations.append(map.get_observation(self.position, obs_angle))
+            observations.append(map.get_observation(self.position, obs_angle, obs_nature))
         return observations
 
     def move(self, map, distance: float, angle: float):
